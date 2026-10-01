@@ -147,14 +147,14 @@ class InterfaceGestaoComputadores:
             text="🔎 Buscar",
             bootstyle=PRIMARY,
             command=self.executar_busca
-        ).pack(side=LEFT, padx=5)
+        ).grid(row=0, column=4, padx=10)
         
         tb.Button(
             frame_busca,
             text="Limpar",
             bootstyle=SECONDARY,
             command=self.limpar_busca
-        ).pack(side=LEFT, padx=5)
+        ).grid(row=0, column=5)
 
         frame_lista = tb.Frame(self.container, padding=20)
         frame_lista.pack(fill=BOTH, expand=True)
