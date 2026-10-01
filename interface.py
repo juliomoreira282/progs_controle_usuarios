@@ -124,6 +124,38 @@ class InterfaceGestaoComputadores:
             font=("Helvetica", 16, "bold")
         ).pack(pady=5)
 
+        frame_busca = tb.Frame(self.container, padding=10)
+        frame_busca.pack(fill=X, padx=10)
+
+        tb.Label(frame_busca, text="Buscar por Coluna:").grid(row=0, column=0, padx=5, sticky=W)
+
+        opcoes_colunas = [
+            "Todos", "Patrimônio", "Marca", "Armazenamento",
+            "RAM", "Servidor", "Usuário", "Monitores"
+        ]
+
+        self.combo_busca_col = tb.Combobox(frame_busca, values=opcoes_colunas, state="readonly", width=15)
+        self.combo_busca_col.current(0)
+        self.combo_busca_col.grid(row=0, column=1, padx=5)
+
+        tb.Label(frame_busca, text="Valor:").grid(row=0, column=2, padx=5, sticky=W)
+        self.entry_busca_val = tb.Entry(frame_busca, width=30)
+        self.entry_busca_val.grid(row=0, column=3, padx=5)
+
+        tb.Button(
+            frame_busca,
+            text="🔎 Buscar",
+            bootstyle=PRIMARY,
+            command=self.executar_busca
+        ).pack(side=LEFT, padx=5)
+        
+        tb.Button(
+            frame_busca,
+            text="Limpar",
+            bootstyle=SECONDARY,
+            command=self.limpar_busca
+        ).pack(side=LEFT, padx=5)
+
         frame_lista = tb.Frame(self.container, padding=20)
         frame_lista.pack(fill=BOTH, expand=True)
 
@@ -159,28 +191,93 @@ class InterfaceGestaoComputadores:
         scroll_y.pack(side=RIGHT, fill=Y)
         self.tree_vis.pack(side=LEFT, fill=BOTH, expand=True)
 
-        pats_ordenados = sorted(self.mapa_linhas.keys(), key=lambda p: self.mapa_linhas[p])
-        for pat in pats_ordenados:
-            dados = self.dados_memoria[pat]
-            d_limpos = [str(d) if d is not None else "" for d in dados]
-            self.tree_vis.insert("", END, 
-                values=(pat, d_limpos[0], d_limpos[1], d_limpos[2], d_limpos[3], d_limpos[4], d_limpos[5])
-            )
-
-        tb.Label(
-            self.container,
-            text=f"Linhas Totais: {len(self.dados_memoria)}",
-            font=("Helvetica", 12, "bold")
-        ).pack()
+        self.lbl_linhas_totais = tb.Label(self.container, text="", font=("Helvetica", 12, "bold"))
+        self.lbl_linhas_totais.pack(pady=5)
 
         tb.Button(
             self.container,
             text="Recarregar Dados",
             bootstyle=(INFO, OUTLINE),
-            command=self.recarregar_visualizacao
+            command=self.recarregar_dados
         ).pack(pady=10)
 
-    def recarregar_visualizacao(self):
+        self.preencher_tabela_visualizacao()
+
+    def executar_busca(self):
+        coluna = self.combo_busca_col.get()
+        termo = self.entry_busca_val.get().strip()
+
+        if not termo:
+            self.preencher_tabela_visualizacao()
+            return
+
+        termo_num = termo.lower().replace("gb", "").replace("tb", "").strip()
+
+        if termo_num.isdigit():
+            numero = int(termo_num)
+            if coluna == "Armaz.":
+                if numero < 10:
+                    termo = f"{numero} TB"
+                elif numero >= 100:
+                    termo = f"{numero} GB"
+            elif coluna == "RAM":
+                termo = f"{numero} GB"
+
+        self.preencher_tabela_visualizacao(filtro_col=coluna, filtro_val=termo)
+
+    def preencher_tabela_visualizacao(self, filtro_col=None, filtro_val=None):
+        for row in self.tree_vis.get_children():
+            self.tree_vis.delete(row)
+
+        col_map = {
+            "Marca": 0,
+            "Armaz.": 1,
+            "RAM": 2,
+            "Servidor": 3,
+            "Usuário": 4,
+            "Monitores": 5
+        }
+
+        resultados = 0
+        pats_ordenados = sorted(self.mapa_linhas.keys(), key=lambda p: self.mapa_linhas[p])
+
+        for pat in pats_ordenados:
+            dados = self.dados_memoria[pat]
+            d_limpos = [str(d) if d is not None else "" for d in dados]
+
+            incluir = True
+            if filtro_col and filtro_val:
+                val_busca = filtro_val.lower().replace(" ", "")
+                if filtro_col == "Patrimônio":
+                    val_excel = pat.lower().replace(" ", "")
+                else:
+                    idx = col_map[filtro_col]
+                    val_excel = d_limpos[idx].lower().replace(" ", "")
+                if val_busca not in val_excel:
+                    incluir = False
+
+            if incluir:
+                self.tree_vis.insert("", END, values=(
+                    d_limpos[0], d_limpos[1], d_limpos[2], d_limpos[3], d_limpos[4], d_limpos[5]
+                ))
+
+                resultados += 1
+
+        if filtro_val:
+            self.lbl_linhas_totais.config(text=f"Linhas Encontradas: {resultados}")
+            if resultados == 0:
+                messagebox.showinfo(
+                    "Busca Sem Resultados", 
+                    f"Nenhuma ocorrência para '{filtro_val}' na coluna '{filtro_col}'.\n\nA tabela foi zerada."
+                )
+        else:
+            self.lbl_linhas_totais.config(text=f"Linhas Totais: {len(self.dados_memoria)}")
+
+    def limpar_busca(self):
+        self.entry_busca_val.delete(0, END)
+        self.preencher_tabela_visualizacao()
+
+    def recarregar_dados(self):
         self.carregar_dados_interface()
         self.tela_visualizar()
 
