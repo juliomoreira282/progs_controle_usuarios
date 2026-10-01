@@ -230,13 +230,13 @@ class InterfaceGestaoComputadores:
             self.tree_vis.delete(row)
 
         col_map = {
-            "Patrimônio": 0,
-            "Marca": 1,
-            "Armaz.": 2,
-            "RAM": 3,
-            "Servidor": 4,
-            "Usuário": 5,
-            "Monitores": 6
+            "Patrimônio": -1,
+            "Marca": 0,
+            "Armaz.": 1,
+            "RAM": 2,
+            "Servidor": 3,
+            "Usuário": 4,
+            "Monitores": 5
         }
 
         resultados = 0
