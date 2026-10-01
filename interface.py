@@ -130,7 +130,7 @@ class InterfaceGestaoComputadores:
         tb.Label(frame_busca, text="Buscar por Coluna:").grid(row=0, column=0, padx=5, sticky=W)
 
         opcoes_colunas = [
-            "Todos", "Patrimônio", "Marca", "Armaz.",
+            "Todos", "Patrimônio", "Marca Comp.", "Armaz.",
             "RAM", "Servidor", "Usuário", "Monitores"
         ]
 
@@ -231,7 +231,7 @@ class InterfaceGestaoComputadores:
 
         col_map = {
             "Patrimônio": -1,
-            "Marca": 0,
+            "Marca Comp.": 0,
             "Armaz.": 1,
             "RAM": 2,
             "Servidor": 3,
