@@ -8,7 +8,7 @@ class InterfaceGestaoComputadores:
         self.excel = backend
 
         self.root.title("Controle de Computadores e Usuários")
-        self.root.geometry("950x700")
+        self.root.geometry("1200x700")
         self.root.resizable(False, False)
 
         self.novos_itens = []
@@ -156,6 +156,16 @@ class InterfaceGestaoComputadores:
             command=self.limpar_busca
         ).grid(row=0, column=5)
 
+        self.lista_sugestoes = tb.Listbox(self.container, height=6)
+
+        self.entry_busca_val.bind('<KeyRelease>', self.atualizar_sugestoes)
+        self.entry_busca_val.bind('<Down>', self.focar_lista_sugestoes)
+        self.entry_busca_val.bind('<FocusOut>', self.esconder_sugestoes)
+        self.combo_busca_col.bind('<<ComboboxSelected>>', lambda e: self.lista_sugestoes.place_forget())
+
+        self.lista_sugestoes.bind('<<ListboxSelect>>', self.selecionar_sugestao)
+        self.lista_sugestoes.bind('<Return>', lambda e: self.selecionar_sugestao(None))
+
         frame_lista = tb.Frame(self.container, padding=20)
         frame_lista.pack(fill=BOTH, expand=True)
 
@@ -172,13 +182,8 @@ class InterfaceGestaoComputadores:
 
         scroll_y.config(command=self.tree_vis.yview)
 
-        self.tree_vis.heading("Patrimônio", text="Patrimônio")
-        self.tree_vis.heading("Marca Comp.", text="Marca Comp.")
-        self.tree_vis.heading("Armaz.", text="Armaz.")
-        self.tree_vis.heading("RAM", text="RAM")
-        self.tree_vis.heading("Servidor", text="Sevidor")
-        self.tree_vis.heading("Usuário", text="Usuário")
-        self.tree_vis.heading("Monitores", text="Monitores")
+        for col in colunas:
+            self.tree_vis.heading(col, text=col)
 
         self.tree_vis.column("Patrimônio", width=80, anchor=CENTER)
         self.tree_vis.column("Marca Comp.", width=80, anchor=CENTER)
@@ -203,9 +208,62 @@ class InterfaceGestaoComputadores:
 
         self.preencher_tabela_visualizacao()
 
+    def atualizar_sugestoes(self, event):
+        if event.keysym in ('Up', 'Down', 'Return', 'Escape', 'Tab'):
+            return
+
+        coluna = self.combo_busca_col.get()
+        termo = self.entry_busca_val.get().lower()
+
+        if coluna not in ["Servidor", "Usuário"] or not termo:
+            self.lista_sugestoes.place_forget()
+            return
+
+        idx = 3 if coluna == "Servidor" else 4
+        sugestoes_encontradas = set()
+
+        for pat, dados in self.dados_memoria.items():
+            val = str(dados[idx]) if dados[idx] is not None else ""
+            if val.lower().startswith(termo):
+                sugestoes_encontradas.add(val)
+
+        if sugestoes_encontradas:
+            self.lista_sugestoes.delete(0, END)
+            for s in sorted(list(sugestoes_encontradas)):
+                self.lista_sugestoes.insert(END, s)
+
+            self.lista_sugestoes.place(in_=self.entry_busca_val, x=0, rely=1, relwidth=1.0)
+            self.lista_sugestoes.lift()
+
+    def focar_lista_sugestoes(self, event):
+        if self.lista_sugestoes.winfo_ismapped():
+            self.lista_sugestoes.focus_set()
+            self.lista_sugestoes.selection_set(0)
+
+    def esconder_sugestoes(self, event):
+        def check_focus():
+            focado = self.root.focus_get()
+            if focado != self.lista_sugestoes and focado != self.entry_busca_val:
+                self.lista_sugestoes.place_forget()
+        self.root.after(150, check_focus)
+
+    def selecionar_sugestao(self, event):
+        if not self.lista_sugestoes.curselection(): return
+
+        index = self.lista_sugestoes.curselection()[0]
+        valor_selecionado = self.lista_sugestoes.get(index)
+
+        self.entry_busca_val.delete(0, END)
+        self.entry_busca_val.insert(0, valor_selecionado)
+        self.lista_sugestoes.place_forget()
+        self.entry_busca_val.focus_set()
+
+        self.executar_busca()
+
     def executar_busca(self):
         coluna = self.combo_busca_col.get()
         termo = self.entry_busca_val.get().strip()
+        self.lista_sugestoes.place_forget()
 
         if not termo:
             self.preencher_tabela_visualizacao()
@@ -230,7 +288,6 @@ class InterfaceGestaoComputadores:
             self.tree_vis.delete(row)
 
         col_map = {
-            "Patrimônio": -1,
             "Marca Comp.": 0,
             "Armaz.": 1,
             "RAM": 2,
@@ -259,7 +316,7 @@ class InterfaceGestaoComputadores:
 
             if incluir:
                 self.tree_vis.insert("", END, values=(
-                    d_limpos[0], d_limpos[1], d_limpos[2], d_limpos[3], d_limpos[4], d_limpos[5]
+                    pat, d_limpos[0], d_limpos[1], d_limpos[2], d_limpos[3], d_limpos[4], d_limpos[5]
                 ))
 
                 resultados += 1
@@ -424,7 +481,7 @@ class InterfaceGestaoComputadores:
             self.carregar_dados_interface()
             self.novos_itens.clear()
             for row in self.tree_add.get_children(): self.tree_add.delete(row)
-            messagebox.showinfo("Sucesso", "Itens Adicionados com sucesso.")
+            messagebox.showinfo("Sucesso", "Itens adicionados com sucesso.")
         else:
             messagebox.showerror("Erro ao Salvar", erro)
 
@@ -613,6 +670,13 @@ class InterfaceGestaoComputadores:
         tb.Label(frame_rem, text="Patrimônio a Remover:", font=("Helvetica", 10, "bold")).grid(row=0, column=0, sticky=W)
         self.entry_rem_pat = tb.Entry(frame_rem, width=25)
         self.entry_rem_pat.grid(row=0, column=1, padx=10)
+
+        tb.Button(
+            frame_rem,
+            text="Adicionar à Fila",
+            bootstyle=DANGER,
+            command=self.adicionar_item_remocao
+        ).grid(row=0, column=2, padx=10)
 
         frame_lista = tb.Frame(self.container, padding=20)
         frame_lista.pack(fill=BOTH, expand=True)
