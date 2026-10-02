@@ -689,9 +689,9 @@ class InterfaceGestaoComputadores:
             bootstyle=DANGER
         )
 
-        self.tree_rem.heading("Patrimônio", text="Patrimônio")
-        self.tree_rem.heading("Usuário Relacionado", text="Usuário Relacionado")
-        self.tree_rem.heading("Status", text="Status")
+        for col in ("Patrimônio", "Usuário Relacionado", "Status"):
+            self.tree_rem.heading(col, text=col)
+            self.tree_rem.column(col, width=160, anchor=CENTER)
         self.tree_rem.pack(fill=BOTH, expand=True)
 
         tb.Button(
