@@ -10,7 +10,7 @@ class GerenciadorExcel:
     def criar_backup(self):
         if not os.path.exists('backups_usuarios'):
             os.makedirs('backups_usuarios')
-        timestamp = datetime.now().strftime("%Y%m%d_%H%m%S")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         caminho_backup = f"backups_usuarios/backup_{timestamp}.xlsx"
         try:
             shutil.copy(self.arquivo, caminho_backup)
@@ -127,7 +127,7 @@ class GerenciadorExcel:
             wb = app.books.open(self.arquivo)
             sheet = wb.sheets['Dados Gerais']
 
-            for pat, novos_dados in itens_substituir, mapa_linhas:
+            for pat, novos_dados in itens_substituir.items():
                 linha = mapa_linhas[pat]
                 sheet.range(f'B{linha}').value = novos_dados[0]
                 sheet.range(f'C{linha}').value = novos_dados[1]
