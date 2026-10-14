@@ -1,6 +1,12 @@
 import ttkbootstrap as tb
 from ttkbootstrap.constants import *
 from tkinter import messagebox
+from tkinter import filedialog
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph
 
 class InterfaceGestaoComputadores:
     def __init__(self, root, backend):
@@ -199,12 +205,22 @@ class InterfaceGestaoComputadores:
         self.lbl_linhas_totais = tb.Label(self.container, text="", font=("Helvetica", 12, "bold"))
         self.lbl_linhas_totais.pack(pady=5)
 
+        frame_botoes = tb.Frame(self.container)
+        frame_botoes.pack()
+
         tb.Button(
-            self.container,
+            frame_botoes,
             text="Recarregar Dados",
             bootstyle=(INFO, OUTLINE),
             command=self.recarregar_dados
-        ).pack(pady=10)
+        ).pack(side=LEFT, padx=10)
+        
+        tb.Button(
+            frame_botoes,
+            text="📄 Exportar para PDF",
+            bootstyle=SUCCESS,
+            command=self.exportar_pdf
+        ).pack(side=LEFT, padx=10)
 
         self.preencher_tabela_visualizacao()
 
@@ -338,6 +354,56 @@ class InterfaceGestaoComputadores:
     def recarregar_dados(self):
         self.carregar_dados_interface()
         self.tela_visualizar()
+
+    def exportar_pdf(self):
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".pdf",
+            filetypes=[("PDF Document", "*.pdf")],
+            title="Salvar relatório como",
+            initialfile="relatorio_computadores.pdf"
+        )
+
+        if not filepath:
+            return
+
+        colunas = ("Patrimônio", "Marca Comp.", "Armaz.", "RAM", "Servidor", "Usuário", "Monitores")
+        dados_pdf = [colunas]
+
+        for item_id in self.tree_vis.get_children():
+            linha_dados = self.tree_vis.item(item_id)['values']
+            dados_pdf.append(linha_dados)
+
+        try:
+            doc = SimpleDocTemplate(filepath, pagesize=landscape(A4))
+            elementos = []
+
+            estilos = getSampleStyleSheet()
+            titulo = Paragraph("Relatório de Computadores e Usuários", estilos['Title'])
+            elementos.append(titulo)
+
+            elementos.append(Paragraph("<br/>", estilos['Normal']))
+
+            tabela = Table(dados_pdf)
+
+            estilo_tabela = TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#5bc0de")),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 12),
+                ('BOTTOMPADDING', (0, 0,), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ])
+            tabela.setStyle(estilo_tabela)
+
+            elementos.append(tabela)
+
+            doc.build(elementos)
+
+            messagebox.showinfo("Sucesso", f"Relatório PDF salvo com sucesso em: \n{filepath}")
+        except Exception as e:
+            messagebox.showerror("Erro ao Gerar PDF", f"Não foi possível salvar o arquivo PDF.\n\nDetalhes:\n{str(e)}")
 
     def tela_adicionar(self):
         self.limpar_tela()
