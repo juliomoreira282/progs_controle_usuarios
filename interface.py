@@ -3,7 +3,7 @@ import os
 from ttkbootstrap.constants import *
 from tkinter import messagebox
 from tkinter import filedialog
-from reportlab.lib.pagesizes import landscape, A4
+from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -374,13 +374,21 @@ class InterfaceGestaoComputadores:
             dados_pdf.append(linha_dados)
 
         try:
-            doc = SimpleDocTemplate(filepath, pagesize=landscape(A4))
+            doc = SimpleDocTemplate(
+                filepath, 
+                pagesize=A4,
+                topMargin=15,
+                bottomMargin=30,
+                leftMargin=30,
+                rightMargin=30
+            )
+            
             elementos = []
             estilos = getSampleStyleSheet()
 
             path_logo = r"Y:\ARQUIVOS PÚBLICOS\TI\LOGO ALICC\V_ALICC.png"
             if os.path.exists(path_logo):
-                logo = Image(path_logo, width=120, height=120)
+                logo = Image(path_logo, width=80, height=80)
                 elementos.append(logo)
                 elementos.append(Paragraph("<br/>", estilos['Normal']))
 
